@@ -323,6 +323,20 @@ int main() {
                 save << text;
                 save.close();
             }
+            if (input == "wq")
+            {
+                if (filepath == "")
+                {
+                    std::cout << "Current path: " << current_working_directory() << "\n" << "Enter filename: ";
+                    std::cin >> filepath;
+                }
+                std::ofstream save(filepath);
+                save << text;
+                save.close();
+                ShowConsoleCursor(1);
+                system("cls");
+                return 0;
+            }
             if (input == "w")
             {
                 std::string path;
