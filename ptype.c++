@@ -84,47 +84,70 @@ int godown(int index, std::string text, int columns)
     if (index < text.length() - 2) return clamp(index+text.substr(index+1, text.length() - 1).find('\n')+1, 0, text.length() - 1);
 }
 
-std::vector<std::string> splitString(const std::string& str, char delimiter) {
-    std::vector<std::string> tokens;
-    std::istringstream iss(str);
-    std::string token;
-    while (std::getline(iss, token, delimiter)) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
+void printable(const std::string& text, int length, int cursorIndex, int lines) {
+    std::vector<std::string> spittenText;
+    std::string line = "";
 
-std::string printable(const std::string& text, int length, int cursorIndex, int lines) {
-    int startIndex = cursorIndex;
-    int endIndex = cursorIndex;
-    int remainingLines = lines;
-    
-    // Calculate the start index of the displayed substring
-    while (startIndex > 0 && remainingLines > 0) {
-        if (text[startIndex] == '\n') {
-            if (--remainingLines == 0) {
-                break;
-            }
+    int counter = 1;
+    int index = 0;
+
+    for (char ch : text)
+    {
+        if (counter == length || ch == '\n') {
+            spittenText.push_back(line);
+            line = "";
+            counter = 1;
+            continue;
         }
-        --startIndex;
-    }
-
-    // Calculate the end index of the displayed substring
-    remainingLines = lines;
-    while (endIndex < text.length() && remainingLines > 0) {
-        if (text[endIndex] == '\n') {
-            if (--remainingLines == 0) {
-                break;
-            }
+        if (index == text.length() - 1) {
+            spittenText.push_back(line);
+            break;
         }
-        ++endIndex;
+
+        line += ch;
+
+        counter++;
+        index++;
     }
 
-    // Adjust start index to prevent negative values
-    startIndex = std::max(startIndex, 0);
+    cursorIndex = 0;
+    for (std::string str : spittenText)
+    {
+        if (str.find(char(219)) != std::string::npos)
+        {
+            break;
+        }
+        cursorIndex++;
+    }
 
-    // Extract the substring to be displayed
-    return text.substr(startIndex, endIndex - startIndex + 1);
+    int halfLines = (lines - 1) / 2;
+    int add = 0;
+
+    int startIndex;
+    int endIndex;
+
+    // std::cout << "hl " << halfLines << " cin" << cursorIndex <<  "\n";
+    if (cursorIndex == halfLines) {
+        startIndex = 0;
+    } if (cursorIndex > halfLines) {
+        startIndex = cursorIndex - halfLines;
+    } if (cursorIndex < halfLines) {
+        startIndex = 0;
+        add = halfLines - cursorIndex;
+    }
+
+    startIndex = clamp(startIndex, 0, spittenText.size() - 1);
+    endIndex = clamp(startIndex + halfLines + add, 0, spittenText.size() - 1);
+
+    // std::cout << std::to_string(text.find(219) != std::string::npos) << "\n";
+
+    // std::cout << startIndex << " " << endIndex << "\n";
+    if (startIndex == endIndex) std::cout << spittenText[0];
+    else {
+        for (int i = startIndex; i <= endIndex; i++) {
+            std::cout << spittenText[i] << "\n";
+        }
+    }
 }
 
 
@@ -161,7 +184,7 @@ int main() {
                          << "\033[0m" << "\n";
             if (text.back() != '\n') text += "\n";
 
-            std::cout << printable(text, columns, index, rows);
+            printable(text, columns, index, rows);
             deleteCharacter(text, char(219));
 
             ch = getch();
