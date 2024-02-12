@@ -54,6 +54,7 @@ int strCount(std::string s, char ch)
 }
 
 #include <dirent.h>
+#include <vector>
 
 std::string current_working_directory()
 {
@@ -83,6 +84,50 @@ int godown(int index, std::string text, int columns)
     if (index < text.length() - 2) return clamp(index+text.substr(index+1, text.length() - 1).find('\n')+1, 0, text.length() - 1);
 }
 
+std::vector<std::string> splitString(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::istringstream iss(str);
+    std::string token;
+    while (std::getline(iss, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+std::string printable(const std::string& text, int length, int cursorIndex, int lines) {
+    int startIndex = cursorIndex;
+    int endIndex = cursorIndex;
+    int remainingLines = lines;
+    
+    // Calculate the start index of the displayed substring
+    while (startIndex > 0 && remainingLines > 0) {
+        if (text[startIndex] == '\n') {
+            if (--remainingLines == 0) {
+                break;
+            }
+        }
+        --startIndex;
+    }
+
+    // Calculate the end index of the displayed substring
+    remainingLines = lines;
+    while (endIndex < text.length() && remainingLines > 0) {
+        if (text[endIndex] == '\n') {
+            if (--remainingLines == 0) {
+                break;
+            }
+        }
+        ++endIndex;
+    }
+
+    // Adjust start index to prevent negative values
+    startIndex = std::max(startIndex, 0);
+
+    // Extract the substring to be displayed
+    return text.substr(startIndex, endIndex - startIndex + 1);
+}
+
+
 int main() {
     std::string text;
     std::string command;
@@ -96,7 +141,6 @@ int main() {
 
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     int columns, rows;
-    int offset = 0;
     char highlighting = ' '; // p python, c c
     int last;
 
@@ -109,14 +153,15 @@ int main() {
         if (!esc)
         {
             system("cls");
+
             std::string bar = "Pos: " + std::to_string(index - int(text.substr(0, index).rfind("\n")))
                                  + " Ln: " + std::to_string(strCount(text.substr(0, index), '\n') + 1);
             std::cout << "\033[47m\033[30m" 
                          << bar << repeatString(" ", columns - bar.length())
                          << "\033[0m" << "\n";
-
             if (text.back() != '\n') text += "\n";
-            std::cout << text;
+
+            std::cout << printable(text, columns, index, rows);
             deleteCharacter(text, char(219));
 
             ch = getch();
@@ -178,6 +223,11 @@ int main() {
                     default:
                         break;
                 }
+            } else if (ch == '\t')
+            {
+                text.insert(index, "    ");
+                text.insert(index+1, cursor);
+                index += 4;
             } else
             {
                 std::string character(1, ch);
