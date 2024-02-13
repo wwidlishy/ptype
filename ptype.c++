@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <fstream>
+#include <regex>
 
 void ShowConsoleCursor(int showFlag) {
     HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -18,6 +19,8 @@ void ShowConsoleCursor(int showFlag) {
 
     SetConsoleCursorInfo(out, &cursorInfo);
 }
+
+// Blah Blah Blah
 
 void deleteCharacter(std::string& str, char ch) {
     size_t pos;
@@ -84,6 +87,16 @@ int godown(int index, std::string text, int columns)
     if (index < text.length() - 2) return clamp(index+text.substr(index+1, text.length() - 1).find('\n')+1, 0, text.length() - 1);
 }
 
+std::string color(std::string line) {
+    std::string line2 = line;
+
+    std::regex C1("\\b(while|if)\\b");
+    std::string c1 = "\e[0;35m$1\e[0m";
+    line = std::regex_replace(line2, C1, c1);
+
+    return line;
+}
+
 void printable(const std::string& text, int length, int cursorIndex, int lines) {
     std::vector<std::string> spittenText;
     std::string line = "";
@@ -127,13 +140,12 @@ void printable(const std::string& text, int length, int cursorIndex, int lines) 
     int endIndex;
 
     // std::cout << "hl " << halfLines << " cin" << cursorIndex <<  "\n";
-    if (cursorIndex == halfLines) {
-        startIndex = 0;
-    } if (cursorIndex > halfLines) {
+    if (cursorIndex >= halfLines) {
         startIndex = cursorIndex - halfLines;
+        add = halfLines - 1;
     } if (cursorIndex < halfLines) {
         startIndex = 0;
-        add = halfLines - cursorIndex;
+        add = halfLines - 1;
     }
 
     startIndex = clamp(startIndex, 0, spittenText.size() - 1);
@@ -145,7 +157,7 @@ void printable(const std::string& text, int length, int cursorIndex, int lines) 
     if (startIndex == endIndex) std::cout << spittenText[0];
     else {
         for (int i = startIndex; i <= endIndex; i++) {
-            std::cout << spittenText[i] << "\n";
+            std::cout << color(spittenText[i]) << "\n";
         }
     }
 }
@@ -177,7 +189,8 @@ int main() {
         {
             system("cls");
 
-            std::string bar = "Pos: " + std::to_string(index - int(text.substr(0, index).rfind("\n")))
+            std::string bar = "[" + filepath + "]"
+                                 + " Pos: " + std::to_string(index - int(text.substr(0, index).rfind("\n")))
                                  + " Ln: " + std::to_string(strCount(text.substr(0, index), '\n') + 1);
             std::cout << "\033[47m\033[30m" 
                          << bar << repeatString(" ", columns - bar.length())
@@ -263,7 +276,8 @@ int main() {
         {
             command = "";
             system("cls");
-            std::string bar = "Pos: " + std::to_string(index - int(text.substr(0, index).rfind("\n")))
+            std::string bar = "[" + filepath + "]"
+                                 + " Pos: " + std::to_string(index - int(text.substr(0, index).rfind("\n")))
                                  + " Ln: " + std::to_string(strCount(text.substr(0, index), '\n') + 1);
             std::cout << "\033[47m\033[30m" 
                          << bar << repeatString(" ", columns - bar.length())
@@ -367,7 +381,7 @@ int main() {
 
 
                     filepath = path;
-                    index = text.length() - 2;
+                    index = 0;
                 }
             }
             if (input == "o")
@@ -416,7 +430,7 @@ int main() {
 
 
                     filepath = path;
-                    index = text.length() - 2;
+                    index = 0;
                 }
             }
             esc = !esc;
@@ -427,5 +441,3 @@ int main() {
     return 0;
 }
 
-// offset*width = startIndex
-// screenchars = lenght
