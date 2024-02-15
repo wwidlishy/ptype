@@ -87,17 +87,61 @@ int godown(int index, std::string text, int columns)
     if (index < text.length() - 2) return clamp(index+text.substr(index+1, text.length() - 1).find('\n')+1, 0, text.length() - 1);
 }
 
-std::string color(std::string line) {
-    std::string line2 = line;
+std::string color(std::string line, std::string highlighting) {
+    std::regex C1("\\b(while|if|break|case|const|continue|default|do|else|enum|extern|for|goto|if|register|return|sizeof|static|struct|switch|typedef|union|volatile|while)\\b");
+    std::string c1 = "\e[0;33m$1\e[0m";
 
-    std::regex C1("\\b(while|if)\\b");
-    std::string c1 = "\e[0;35m$1\e[0m";
-    line = std::regex_replace(line2, C1, c1);
+    std::regex C2("\\b(true|false)\\b");
+    std::string c2 = "\e[1m$1\e[22m";
 
+    std::regex C3("\\b(size_t|int|float|bool|char|long|short|signed|unsigned|void|double)\\b");
+    std::string c3 = "\e[0;32m$1\e[0m";
+
+    std::regex C4("\\b/\\*.*?\\*/|//.*?$\\b");
+    std::string c4 = "\e[1;30m$&\e[0m";
+
+    std::regex P1("\\b(and|as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield)\\b");
+    std::string p1 = "\e[0;33m$1\e[0m";
+
+    std::regex P2("\\b(True|False)\\b");
+    std::string p2 = "\e[1m$1\e[22m";
+
+    std::regex P3("\\b(int|float|str|complex|bool|list|tuple|range|dict|set|frozenset|bytes|bytearray|memoryview|None)\\b");
+    std::string p3 = "\e[0;32m$1\e[0m";
+
+    std::regex P4("\\b#.*?$\\b");
+    std::string p4 = "\e[1;30m$&\e[0m";
+
+    std::regex U1("\\b(\\d+(\\.\\d+)?|\\.\\d+)\\b");
+    std::string u1 = "\e[0;31m$1\e[0m";
+
+    std::regex U2(R"((["'])(.*?)\1)");
+    std::string u2 = "\e[0;31m$&\e[0m";
+
+    if (highlighting != "")
+    {
+        line = std::regex_replace(line, U1, u1);
+        line = std::regex_replace(line, U2, u2);
+    }
+
+    if (highlighting == "c")
+    {
+        line = std::regex_replace(line, C1, c1);
+        line = std::regex_replace(line, C2, c2);
+        line = std::regex_replace(line, C3, c3);
+        line = std::regex_replace(line, C4, c4);
+    }
+    if (highlighting == "py")
+    {
+        line = std::regex_replace(line, P1, p1);
+        line = std::regex_replace(line, P2, p2);
+        line = std::regex_replace(line, P3, p3);
+        line = std::regex_replace(line, P4, p4);
+    }
     return line;
 }
 
-void printable(const std::string& text, int length, int cursorIndex, int lines) {
+void printable(const std::string& text, int length, int cursorIndex, int lines, std::string highlighting) {
     std::vector<std::string> spittenText;
     std::string line = "";
 
@@ -157,11 +201,18 @@ void printable(const std::string& text, int length, int cursorIndex, int lines) 
     if (startIndex == endIndex) std::cout << spittenText[0];
     else {
         for (int i = startIndex; i <= endIndex; i++) {
-            std::cout << color(spittenText[i]) << "\n";
+            std::cout << color(spittenText[i], highlighting) << "\n";
         }
     }
 }
 
+bool hasEnding (std::string const &fullString, std::string const &ending) {
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+        return false;
+    }
+}
 
 int main() {
     std::string text;
@@ -176,7 +227,7 @@ int main() {
 
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     int columns, rows;
-    char highlighting = ' '; // p python, c c
+    std::string highlighting; // p python, c c
     int last;
 
     while (true)
@@ -184,6 +235,12 @@ int main() {
         GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
         columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
         rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+
+        if (highlighting != "py" && highlighting != "c")
+        {
+            if (hasEnding(filepath, ".py")) highlighting = "py";
+            if (hasEnding(filepath, ".c") || hasEnding(filepath, ".cpp") || hasEnding(filepath, ".c++")) highlighting = "c";
+        }
 
         if (!esc)
         {
@@ -197,7 +254,7 @@ int main() {
                          << "\033[0m" << "\n";
             if (text.back() != '\n') text += "\n";
 
-            printable(text, columns, index, rows);
+            printable(text, columns, index, rows, highlighting);
             deleteCharacter(text, char(219));
 
             ch = getch();
@@ -286,6 +343,11 @@ int main() {
             std::string input;
             std::cin >> input;
 
+            if (input == "sh")
+            {
+                std::cout << "Avaliable: py, c" << "\n";
+                std::cin >> highlighting;
+            }
             if (input == "qq") 
             {
                 system("cls");
@@ -372,7 +434,11 @@ int main() {
 
                 if (!file)
                 {
-                    continue;
+                    std::ofstream file2(path);
+                    file2.close();
+                    text = ""; // Convert the stringstream to a string
+                    filepath = path;
+                    index = 0;
                 } else
                 {
                     std::stringstream buffer;
@@ -395,7 +461,11 @@ int main() {
 
                 if (!file)
                 {
-                    continue;
+                    std::ofstream file2(path);
+                    file2.close();
+                    text = ""; // Convert the stringstream to a string
+                    filepath = path;
+                    index = 0;
                 } else
                 {
                     std::cout << "Do you want to save?" << "\n" << "(yn) ";
