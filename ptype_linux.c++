@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <conio.h> 
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -13,7 +12,7 @@
 
 void ShowConsoleCursor(int showFlag) {
     if (showFlag) std::cout << "\e[?25l";
-    else std::cout << "\e[?25h"
+    else std::cout << "\e[?25h";
 }
 
 // Blah Blah Blah
@@ -57,7 +56,7 @@ int strCount(std::string s, char ch)
 
 std::string current_working_directory()
 {
-    char* cwd = _getcwd( 0, 0 ) ; // **** microsoft specific ****
+    char* cwd = getcwd(cwd, sizeof(cwd)); // **** microsoft specific ****
     std::string working_directory(cwd) ;
     std::free(cwd) ;
     return working_directory ;
@@ -81,6 +80,7 @@ std::string repeatString(const std::string& str, int times) {
 int godown(int index, std::string text, int columns)
 {
     if (index < text.length() - 2) return clamp(index+text.substr(index+1, text.length() - 1).find('\n')+1, 0, text.length() - 1);
+		return index;
 }
 
 std::string color(std::string line, std::string highlighting) {
@@ -240,7 +240,7 @@ int main() {
 
         if (!esc)
         {
-            system("clear");
+            printf("\x1B[2J");
 
             std::string bar = "[" + filepath + "]"
                                  + " Pos: " + std::to_string(index - int(text.substr(0, index).rfind("\n")))
@@ -253,12 +253,12 @@ int main() {
             printable(text, columns, index, rows, highlighting);
             deleteCharacter(text, char(219));
 
-            ch = getch();
+            ch = getchar();
 
             if (ch == 27) // ESC
             {
                 deleteCharacter(text, char(219));
-                system("clear");
+                printf("\x1B[2J");
                 std::cout << text << "\n\n";
 
                 esc = !esc;
@@ -278,7 +278,7 @@ int main() {
                 text.insert(index, cursor);
             } else if (ch == 0 || ch == 224 || ch == -32)
             {
-                switch (getch())
+                switch (getchar())
                 {
                     case 72: // UP
                         last = index;
@@ -328,7 +328,7 @@ int main() {
         } else
         {
             command = "";
-            system("clear");
+            printf("\x1B[2J");
             std::string bar = "[" + filepath + "]"
                                  + " Pos: " + std::to_string(index - int(text.substr(0, index).rfind("\n")))
                                  + " Ln: " + std::to_string(strCount(text.substr(0, index), '\n') + 1);
@@ -346,7 +346,7 @@ int main() {
             }
             if (input == "qq") 
             {
-                system("clear");
+                printf("\x1B[2J");
                 ShowConsoleCursor(1);
                 return 0;
             }
@@ -358,7 +358,7 @@ int main() {
 
                 while (choice != "y" && choice != "n")
                 {
-                    system("clear");
+                    printf("\x1B[2J");
                     std::cout << "\033[47m\033[30m" 
                                 << bar << repeatString(" ", columns - bar.length())
                                 << "\033[0m" << "\n";
@@ -379,7 +379,7 @@ int main() {
                     save.close();
                 }
 
-                system("clear");
+                printf("\x1B[2J");
                 ShowConsoleCursor(1);
                 return 0;
 
@@ -406,7 +406,7 @@ int main() {
                 save << text;
                 save.close();
                 ShowConsoleCursor(1);
-                system("clear");
+                printf("\x1B[2J");
                 return 0;
             }
             if (input == "w")
@@ -470,7 +470,7 @@ int main() {
 
                     while (choice != "y" && choice != "n")
                     {
-                        system("clear");
+                        printf("\x1B[2J");
                         std::cout << "\033[47m\033[30m" 
                                     << bar << repeatString(" ", columns - bar.length())
                                     << "\033[0m" << "\n";
